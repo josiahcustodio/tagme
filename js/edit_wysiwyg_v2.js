@@ -18,7 +18,13 @@ let card = {
   title: "Your title here",
   subtitle: "Short description here",
   photo_url: "",
-  links: []
+  links: [],
+  // contact fields for VCF
+  country_code: "+63",
+  phone: "",
+  email: "",
+  org: "",
+  role: ""
 };
 
 // ====== Load Card From Supabase ======
@@ -41,7 +47,12 @@ async function loadCardFromSupabase() {
         title: data.title || "Your title here",
         subtitle: data.subtitle || "Short description here",
         photo_url: data.photo_url || "",
-        links: Array.isArray(data.links) ? data.links : []
+        links: Array.isArray(data.links) ? data.links : [],
+        country_code: data.country_code || "+63",
+        phone: data.phone || "",
+        email: data.email || "",
+        org: data.org || "",
+        role: data.role || ""
       };
     }
   } catch (err) {
@@ -59,7 +70,12 @@ async function saveFinal() {
     title: card.title,
     subtitle: card.subtitle,
     photo_url: card.photo_url,
-    links: card.links
+    links: card.links,
+    country_code: card.country_code,
+    phone: card.phone,
+    email: card.email,
+    org: card.org,
+    role: card.role
   };
 
   const { error } = await window.sb.from("cards").upsert(cardData);
@@ -76,7 +92,7 @@ function renderEditor() {
   const root = document.getElementById("editorCard");
   root.innerHTML = "";
 
-  // Header
+  // ===== Header =====
   const header = document.createElement("div");
   header.className = "card-header";
 
@@ -157,15 +173,14 @@ function renderEditor() {
 
   header.appendChild(photoWrap);
   header.appendChild(textFields);
-
   root.appendChild(header);
 
-  // Divider
+  // ===== Divider =====
   const divider = document.createElement("div");
   divider.className = "card-divider";
   root.appendChild(divider);
 
-  // Links
+  // ===== Links =====
   const linksTitle = document.createElement("div");
   linksTitle.className = "links-area-title";
   linksTitle.textContent = "Links";
@@ -213,7 +228,58 @@ function renderEditor() {
   };
   root.appendChild(addBtn);
 
-  // Public URL
+  // ===== CONTACT SECTION (for VCF) =====
+  const contactTitle = document.createElement("div");
+  contactTitle.className = "links-area-title";
+  contactTitle.textContent = "Contact Information";
+  root.appendChild(contactTitle);
+
+  const contactRow = document.createElement("div");
+  contactRow.className = "contact-row";
+
+  const ccInput = document.createElement("input");
+  ccInput.className = "contact-cc-input";
+  ccInput.placeholder = "+63";
+  ccInput.value = card.country_code || "+63";
+  ccInput.oninput = () => (card.country_code = ccInput.value);
+
+  const phoneInput = document.createElement("input");
+  phoneInput.className = "contact-phone-input";
+  phoneInput.placeholder = "Phone number";
+  phoneInput.value = card.phone || "";
+  phoneInput.oninput = () => (card.phone = phoneInput.value);
+
+  const emailInput = document.createElement("input");
+  emailInput.className = "contact-email-input";
+  emailInput.placeholder = "Email (optional)";
+  emailInput.value = card.email || "";
+  emailInput.oninput = () => (card.email = emailInput.value);
+
+  contactRow.appendChild(ccInput);
+  contactRow.appendChild(phoneInput);
+  contactRow.appendChild(emailInput);
+  root.appendChild(contactRow);
+
+  const orgRow = document.createElement("div");
+  orgRow.className = "contact-extra-row";
+
+  const orgInput = document.createElement("input");
+  orgInput.className = "contact-org-input";
+  orgInput.placeholder = "Organization / Company (optional)";
+  orgInput.value = card.org || "";
+  orgInput.oninput = () => (card.org = orgInput.value);
+
+  const roleInput = document.createElement("input");
+  roleInput.className = "contact-role-input";
+  roleInput.placeholder = "Role / Position (optional)";
+  roleInput.value = card.role || "";
+  roleInput.oninput = () => (card.role = roleInput.value);
+
+  orgRow.appendChild(orgInput);
+  orgRow.appendChild(roleInput);
+  root.appendChild(orgRow);
+
+  // ===== Public URL =====
   const urlBox = document.createElement("div");
   urlBox.className = "public-url-box";
 
@@ -230,7 +296,7 @@ function renderEditor() {
   urlBox.appendChild(urlInput);
   root.appendChild(urlBox);
 
-  // Save button
+  // ===== Save button =====
   const saveBtn = document.createElement("button");
   saveBtn.className = "add-link-btn";
   saveBtn.textContent = "Save Changes";
