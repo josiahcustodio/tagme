@@ -6,24 +6,15 @@ const urlPub = new URL(window.location.href);
 const cardId = urlPub.searchParams.get("id");
 const viewRoot = document.getElementById("cardView");
 
-// ----- Supabase Client (loaded from HTML) -----
-/*
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-  const SUPABASE_URL = "YOUR_URL";
-  const SUPABASE_ANON_KEY = "YOUR_KEY";
-  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-</script>
-*/
-
+// ----- Load the card from Supabase -----
 async function loadCard() {
   if (!cardId) {
     viewRoot.innerHTML = "<p style='text-align:center;'>No card ID provided.</p>";
     return;
   }
 
-  // Fetch the card from Supabase
-  const { data, error } = await supabase
+  // Fetch the card from Supabase (use window.sb — NOT supabase)
+  const { data, error } = await window.sb
     .from("cards")
     .select("*")
     .eq("id", cardId)
@@ -40,7 +31,7 @@ async function loadCard() {
     return;
   }
 
-  // Build the public view
+  // Photo
   const photo = data.photo_url
     ? `<img src="${data.photo_url}" class="public-photo" alt="Profile Photo" />`
     : "";
@@ -56,10 +47,10 @@ async function loadCard() {
       .filter(l => l.label && l.url)
       .map(
         l => `
-        <a href="${l.url}" class="public-link" target="_blank">
-          ${l.label}
-        </a>
-      `
+          <a href="${l.url}" class="public-link" target="_blank">
+            ${l.label}
+          </a>
+        `
       )
       .join("");
   } else {
@@ -70,6 +61,7 @@ async function loadCard() {
     `;
   }
 
+  // Render public view
   viewRoot.innerHTML = `
     <div class="public-top">
       ${photo}
@@ -77,6 +69,7 @@ async function loadCard() {
       ${title}
       ${subtitle}
     </div>
+
     <div class="public-links">
       ${linksHTML}
     </div>
