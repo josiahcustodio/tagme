@@ -381,3 +381,48 @@ body::-webkit-scrollbar-thumb {
     align-items: center;
   }
 }
+
+.contact-container {
+  width: 100%;
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.phone-row {
+  display: flex;
+  gap: 10px;
+}
+
+.contact-cc {
+  width: 60px;
+  background: #1c1c1f;
+  border: 1px solid #2b2b2e;
+  color: white;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.contact-phone {
+  flex: 1;
+  background: #1c1c1f;
+  border: 1px solid #2b2b2e;
+  color: white;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.contact-input {
+  width: 100%;
+  background: #1c1c1f;
+  border: 1px solid #2b2b2e;
+  color: white;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
