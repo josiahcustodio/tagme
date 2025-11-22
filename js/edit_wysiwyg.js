@@ -166,7 +166,9 @@ function renderEditor() {
   root.appendChild(header);
 
   // Divider
-  root.appendChild(Object.assign(document.createElement("div"), { className: "card-divider" }));
+  const divider = document.createElement("div");
+  divider.className = "card-divider";
+  root.appendChild(divider);
 
   // ----- Links -----
   const linksTitle = document.createElement("div");
