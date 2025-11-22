@@ -8,9 +8,7 @@
 <body>
   <div id="editorCard" class="card-editor"></div>
 
-  <!-- Load Supabase SDK FIRST -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
+  <!-- Load ONLY UMD version of Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 
 <script>
@@ -18,13 +16,9 @@
   const SUPABASE_ANON_KEY =
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3enNyaGF4c3NtbWR0YnZtd25lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NzY0OTEsImV4cCI6MjA3OTM1MjQ5MX0.hi8_62MKDQ2_pJgj4PGb5nXmKpm5mm_PUrGxUAVAaHU";
 
-  // Create supabase client (WORKING)
-  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  window.sb = sb; // expose globally
+  window.sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 </script>
 
-
-  <script src="js/edit_wysiwyg_v2.js"></script>
+<script src="js/edit_wysiwyg_v2.js"></script>
 </body>
 </html>
