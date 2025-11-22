@@ -1,0 +1,383 @@
+/* ===========================
+   Global
+   =========================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:root {
+  --bg: #05070b;
+  --bg-alt: #0b0f16;
+  --bg-card: #10141f;
+  --bg-card-soft: #181c29;
+  --accent: #cfd4ff;
+  --accent-strong: #f5f5ff;
+  --accent-soft: rgba(255, 255, 255, 0.06);
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --text: #f8f9ff;
+  --text-muted: #8d93aa;
+  --danger: #ff4c6a;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-pill: 999px;
+  --shadow-soft: 0 24px 60px rgba(0, 0, 0, 0.70);
+  --shadow-subtle: 0 14px 40px rgba(0, 0, 0, 0.55);
+  --transition-fast: 150ms ease-out;
+  --transition-med: 220ms ease-out;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  background: radial-gradient(circle at top left, #181f33 0, #05070b 45%, #010208 100%);
+  color: var(--text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+}
+
+body {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 32px 16px;
+}
+
+/* Scrollbar subtle */
+body::-webkit-scrollbar {
+  width: 8px;
+}
+body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+}
+
+/* ===========================
+   Card Editor (edit.html)
+   =========================== */
+
+.card-editor {
+  width: 100%;
+  max-width: 430px;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.06), transparent 55%),
+    linear-gradient(145deg, rgba(9, 11, 21, 0.96), rgba(5, 7, 14, 0.98));
+  border-radius: 34px;
+  padding: 24px 22px 26px;
+  box-shadow: var(--shadow-soft);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(22px);
+}
+
+@media (min-width: 900px) {
+  .card-editor {
+    padding: 28px 26px 30px;
+  }
+}
+
+.card-header {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.profile-photo-wrapper {
+  position: relative;
+}
+
+.profile-photo {
+  width: 78px;
+  height: 78px;
+  border-radius: 24px;
+  background: linear-gradient(145deg, #262a34, #141821);
+  object-fit: cover;
+  display: block;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+  cursor: pointer;
+}
+
+.profile-photo-hint {
+  position: absolute;
+  bottom: -18px;
+  left: 0;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+.card-text-fields {
+  flex: 1;
+}
+
+.card-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  padding: 4px 0;
+  outline: none;
+}
+
+.card-input.handle {
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+.card-input.title {
+  font-size: 0.95rem;
+  color: var(--accent-strong);
+}
+
+.card-input.subtitle {
+  font-size: 0.86rem;
+  color: var(--text-muted);
+}
+
+.card-input::placeholder {
+  color: rgba(190, 197, 224, 0.6);
+}
+
+/* Divider */
+.card-divider {
+  height: 1px;
+  background: linear-gradient(to right, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.02));
+  margin: 14px 0 12px;
+}
+
+/* Links area inside editor */
+.links-area-title {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.link-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 9px 11px;
+  border-radius: 16px;
+  background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.08), transparent 55%),
+              linear-gradient(145deg, #171b28, #101521);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  margin-bottom: 8px;
+}
+
+.link-row-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.link-label-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--accent-strong);
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.link-url-input {
+  width: 100%;
+  border-radius: 999px;
+  border: none;
+  background: rgba(0, 0, 0, 0.36);
+  padding: 6px 9px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  outline: none;
+}
+
+.link-label-input::placeholder,
+.link-url-input::placeholder {
+  color: rgba(190, 197, 224, 0.7);
+}
+
+.link-delete-btn {
+  border-radius: 999px;
+  border: none;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  background: rgba(255, 78, 104, 0.14);
+  color: var(--danger);
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.link-delete-btn:hover {
+  background: rgba(255, 78, 104, 0.24);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.7);
+}
+
+.link-delete-btn:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.add-link-btn {
+  width: 100%;
+  border-radius: var(--radius-pill);
+  padding: 9px 16px;
+  margin-top: 4px;
+  border: 1px dashed rgba(255, 255, 255, 0.26);
+  background: rgba(19, 22, 32, 0.9);
+  color: var(--accent-strong);
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition:
+    background var(--transition-med),
+    border-color var(--transition-med),
+    transform var(--transition-fast),
+    box-shadow var(--transition-med);
+}
+
+.add-link-btn:hover {
+  background: rgba(25, 29, 41, 0.98);
+  border-color: rgba(194, 204, 255, 0.9);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.7);
+}
+
+.add-link-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
+}
+
+/* Public URL box in editor */
+.public-url-box {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.public-url-label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.public-url-input {
+  width: 100%;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(3, 5, 10, 0.92);
+  padding: 7px 10px;
+  font-size: 0.8rem;
+  color: var(--accent-strong);
+  outline: none;
+}
+
+/* ===========================
+   Public Card (card.html + index.html)
+   =========================== */
+
+.public-card {
+  width: 100%;
+  max-width: 420px;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.16), transparent 55%),
+    linear-gradient(145deg, #060711, #070a16 40%, #04050a 100%);
+  border-radius: 36px;
+  padding: 26px 22px 24px;
+  box-shadow: var(--shadow-soft);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  margin: 0 auto;
+}
+
+.public-top {
+  text-align: center;
+  margin-bottom: 18px;
+}
+
+.public-photo {
+  width: 80px;
+  height: 80px;
+  border-radius: 26px;
+  background: linear-gradient(145deg, #262a34, #141821);
+  object-fit: cover;
+  display: block;
+  margin: 0 auto 14px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+}
+
+.public-top h2 {
+  margin: 0 0 4px;
+  font-size: 1.15rem;
+}
+
+.public-top h4 {
+  margin: 0 0 2px;
+  font-size: 0.96rem;
+  color: var(--accent-strong);
+}
+
+.public-top p {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--text-muted);
+}
+
+.public-links {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.public-link {
+  display: block;
+  text-decoration: none;
+  text-align: center;
+  padding: 10px 16px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(135deg, rgba(230, 233, 255, 0.08), rgba(200, 205, 255, 0.05));
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: var(--accent-strong);
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  transition:
+    background var(--transition-med),
+    transform var(--transition-fast),
+    box-shadow var(--transition-med),
+    border-color var(--transition-med);
+}
+
+.public-link:hover {
+  transform: translateY(-1px);
+  background: linear-gradient(135deg, rgba(239, 241, 255, 0.22), rgba(212, 217, 255, 0.20));
+  border-color: rgba(198, 207, 255, 0.85);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.7);
+}
+
+.public-link:active {
+  transform: translateY(0);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.65);
+}
+
+/* Center public card on viewport (card.html & index.html) */
+.public-card:only-child {
+  margin-top: 32px;
+}
+
+@media (min-height: 700px) {
+  body:has(.public-card) {
+    align-items: center;
+  }
+}
