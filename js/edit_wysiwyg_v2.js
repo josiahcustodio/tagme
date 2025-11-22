@@ -2,6 +2,11 @@
 // Cloud-only WYSIWYG editor using Supabase (no localStorage)
 // Uses global client: window.sb (defined in edit.html)
 
+// ====== Safety check ======
+if (!window.sb) {
+  console.error("Supabase client (window.sb) not found. Check edit.html script order.");
+}
+
 // ====== Get / generate card ID ======
 const url = new URL(window.location.href);
 let id = url.searchParams.get("id");
@@ -19,7 +24,7 @@ let card = {
   subtitle: "Short description here",
   photo_url: "",
   links: [],
-  // contact fields for VCF
+  // contact fields for VCF / Save contact
   country_code: "+63",
   phone: "",
   email: "",
@@ -36,6 +41,7 @@ async function loadCardFromSupabase() {
       .eq("id", id)
       .maybeSingle();
 
+    // PGRST116 = no rows found
     if (error && error.code !== "PGRST116") {
       console.error("Load error:", error);
     }
@@ -129,188 +135,6 @@ function renderEditor() {
         return;
       }
 
-      const { data } = window.sb
-        .storage
-        .from("profile-photos")
-        .getPublicUrl(fileName);
-
-      card.photo_url = data.publicUrl;
-      renderEditor();
-    };
-
-    picker.click();
-  };
-
-  const hint = document.createElement("div");
-  hint.className = "profile-photo-hint";
-  hint.textContent = "Tap to upload photo";
-
-  photoWrap.appendChild(img);
-  photoWrap.appendChild(hint);
-
-  // TEXT FIELDS
-  const textFields = document.createElement("div");
-  textFields.className = "card-text-fields";
-
-  const handleInput = document.createElement("input");
-  handleInput.className = "card-input handle";
-  handleInput.value = card.handle;
-  handleInput.oninput = () => (card.handle = handleInput.value);
-
-  const titleInput = document.createElement("input");
-  titleInput.className = "card-input title";
-  titleInput.value = card.title;
-  titleInput.oninput = () => (card.title = titleInput.value);
-
-  const subtitleInput = document.createElement("input");
-  subtitleInput.className = "card-input subtitle";
-  subtitleInput.value = card.subtitle;
-  subtitleInput.oninput = () => (card.subtitle = subtitleInput.value);
-
-  textFields.appendChild(handleInput);
-  textFields.appendChild(titleInput);
-  textFields.appendChild(subtitleInput);
-
-  header.appendChild(photoWrap);
-  header.appendChild(textFields);
-
-  root.appendChild(header);
-
-  // Divider
-  const divider = document.createElement("div");
-  divider.className = "card-divider";
-  root.appendChild(divider);
-
-  // ===== LINKS AREA =====
-  const linksTitle = document.createElement("div");
-  linksTitle.className = "links-area-title";
-  linksTitle.textContent = "LINKS";
-  root.appendChild(linksTitle);
-
-  card.links.forEach((link, index) => {
-    const row = document.createElement("div");
-    row.className = "link-row";
-
-    const top = document.createElement("div");
-    top.className = "link-row-top";
-
-    const labelInput = document.createElement("input");
-    labelInput.className = "link-label-input";
-    labelInput.value = link.label || "";
-    labelInput.oninput = () => (card.links[index].label = labelInput.value);
-
-    const deleteBtn = document.createElement("button");
-    deleteBtn.className = "link-delete-btn";
-    deleteBtn.textContent = "×";
-    deleteBtn.onclick = () => {
-      card.links.splice(index, 1);
-      renderEditor();
-    };
-
-    top.appendChild(labelInput);
-    top.appendChild(deleteBtn);
-
-    const urlInput = document.createElement("input");
-    urlInput.className = "link-url-input";
-    urlInput.value = link.url || "";
-    urlInput.oninput = () => (card.links[index].url = urlInput.value);
-
-    row.appendChild(top);
-    row.appendChild(urlInput);
-    root.appendChild(row);
-  });
-
-  const addBtn = document.createElement("button");
-  addBtn.className = "add-link-btn";
-  addBtn.textContent = "+ Add link";
-  addBtn.onclick = () => {
-    card.links.push({ label: "", url: "" });
-    renderEditor();
-  };
-  root.appendChild(addBtn);
-
-  // ===== CONTACT INFORMATION =====
-  const contactTitle = document.createElement("div");
-  contactTitle.className = "links-area-title";
-  contactTitle.textContent = "CONTACT INFORMATION";
-  root.appendChild(contactTitle);
-
-  const contactContainer = document.createElement("div");
-  contactContainer.className = "contact-container";
-
-  // Phone row
-  const phoneRow = document.createElement("div");
-  phoneRow.className = "phone-row";
-
-  const ccInput = document.createElement("input");
-  ccInput.className = "contact-cc";
-  ccInput.value = "+63";
-  ccInput.readOnly = true;
-
-  const phoneInput = document.createElement("input");
-  phoneInput.className = "contact-phone";
-  phoneInput.placeholder = "Phone number";
-  phoneInput.value = card.phone || "";
-  phoneInput.oninput = () => (card.phone = phoneInput.value);
-
-  phoneRow.appendChild(ccInput);
-  phoneRow.appendChild(phoneInput);
-  contactContainer.appendChild(phoneRow);
-
-  // Email
-  const emailInput = document.createElement("input");
-  emailInput.className = "contact-input";
-  emailInput.placeholder = "Email (optional)";
-  emailInput.value = card.email || "";
-  emailInput.oninput = () => (card.email = emailInput.value);
-  contactContainer.appendChild(emailInput);
-
-  // Organization
-  const orgInput = document.createElement("input");
-  orgInput.className = "contact-input";
-  orgInput.placeholder = "Organization / Company (optional)";
-  orgInput.value = card.org || "";
-  orgInput.oninput = () => (card.org = orgInput.value);
-  contactContainer.appendChild(orgInput);
-
-  // Role
-  const roleInput = document.createElement("input");
-  roleInput.className = "contact-input";
-  roleInput.placeholder = "Role / Position (optional)";
-  roleInput.value = card.role || "";
-  roleInput.oninput = () => (card.role = roleInput.value);
-  contactContainer.appendChild(roleInput);
-
-  root.appendChild(contactContainer);
-
-  // ===== PUBLIC URL =====
-  const urlBox = document.createElement("div");
-  urlBox.className = "public-url-box";
-
-  const urlLabel = document.createElement("div");
-  urlLabel.className = "public-url-label";
-  urlLabel.textContent = "PUBLIC CARD URL";
-
-  const urlInput = document.createElement("input");
-  urlInput.className = "public-url-input";
-  urlInput.value = `${window.location.origin}/card.html?id=${id}`;
-  urlInput.readOnly = true;
-
-  urlBox.appendChild(urlLabel);
-  urlBox.appendChild(urlInput);
-  root.appendChild(urlBox);
-
-  // ===== SAVE BUTTON =====
-  const saveBtn = document.createElement("button");
-  saveBtn.className = "add-link-btn";
-  saveBtn.textContent = "Save Changes";
-  saveBtn.style.background = "#3c6aff";
-  saveBtn.style.color = "white";
-  saveBtn.onclick = saveFinal;
-
-  root.appendChild(saveBtn);
-}
-
       // Retrieve URL
       const { data } = window.sb
         .storage
@@ -331,6 +155,7 @@ function renderEditor() {
   photoWrap.appendChild(img);
   photoWrap.appendChild(hint);
 
+  // TEXT FIELDS (handle, title, subtitle)
   const textFields = document.createElement("div");
   textFields.className = "card-text-fields";
 
@@ -365,7 +190,7 @@ function renderEditor() {
   // ===== Links =====
   const linksTitle = document.createElement("div");
   linksTitle.className = "links-area-title";
-  linksTitle.textContent = "Links";
+  linksTitle.textContent = "LINKS";
   root.appendChild(linksTitle);
 
   card.links.forEach((link, index) => {
@@ -378,6 +203,7 @@ function renderEditor() {
     const labelInput = document.createElement("input");
     labelInput.className = "link-label-input";
     labelInput.value = link.label || "";
+    labelInput.placeholder = "Label (Facebook, IG, etc)";
     labelInput.oninput = () => (card.links[index].label = labelInput.value);
 
     const deleteBtn = document.createElement("button");
@@ -394,6 +220,7 @@ function renderEditor() {
     const urlInput = document.createElement("input");
     urlInput.className = "link-url-input";
     urlInput.value = link.url || "";
+    urlInput.placeholder = "https://yourlink.com";
     urlInput.oninput = () => (card.links[index].url = urlInput.value);
 
     row.appendChild(top);
@@ -413,53 +240,57 @@ function renderEditor() {
   // ===== CONTACT SECTION (for VCF) =====
   const contactTitle = document.createElement("div");
   contactTitle.className = "links-area-title";
-  contactTitle.textContent = "Contact Information";
+  contactTitle.textContent = "CONTACT INFORMATION";
   root.appendChild(contactTitle);
 
-  const contactRow = document.createElement("div");
-  contactRow.className = "contact-row";
+  const contactContainer = document.createElement("div");
+  contactContainer.className = "contact-container";
+
+  // Phone row: small +63 box + main number box
+  const phoneRow = document.createElement("div");
+  phoneRow.className = "phone-row";
 
   const ccInput = document.createElement("input");
-  ccInput.className = "contact-cc-input";
+  ccInput.className = "contact-cc";
   ccInput.placeholder = "+63";
   ccInput.value = card.country_code || "+63";
   ccInput.oninput = () => (card.country_code = ccInput.value);
 
   const phoneInput = document.createElement("input");
-  phoneInput.className = "contact-phone-input";
+  phoneInput.className = "contact-phone";
   phoneInput.placeholder = "Phone number";
   phoneInput.value = card.phone || "";
   phoneInput.oninput = () => (card.phone = phoneInput.value);
 
+  phoneRow.appendChild(ccInput);
+  phoneRow.appendChild(phoneInput);
+  contactContainer.appendChild(phoneRow);
+
+  // Email
   const emailInput = document.createElement("input");
-  emailInput.className = "contact-email-input";
+  emailInput.className = "contact-input";
   emailInput.placeholder = "Email (optional)";
   emailInput.value = card.email || "";
   emailInput.oninput = () => (card.email = emailInput.value);
+  contactContainer.appendChild(emailInput);
 
-  contactRow.appendChild(ccInput);
-  contactRow.appendChild(phoneInput);
-  contactRow.appendChild(emailInput);
-  root.appendChild(contactRow);
-
-  const orgRow = document.createElement("div");
-  orgRow.className = "contact-extra-row";
-
+  // Organization
   const orgInput = document.createElement("input");
-  orgInput.className = "contact-org-input";
+  orgInput.className = "contact-input";
   orgInput.placeholder = "Organization / Company (optional)";
   orgInput.value = card.org || "";
   orgInput.oninput = () => (card.org = orgInput.value);
+  contactContainer.appendChild(orgInput);
 
+  // Role / Position
   const roleInput = document.createElement("input");
-  roleInput.className = "contact-role-input";
+  roleInput.className = "contact-input";
   roleInput.placeholder = "Role / Position (optional)";
   roleInput.value = card.role || "";
   roleInput.oninput = () => (card.role = roleInput.value);
+  contactContainer.appendChild(roleInput);
 
-  orgRow.appendChild(orgInput);
-  orgRow.appendChild(roleInput);
-  root.appendChild(orgRow);
+  root.appendChild(contactContainer);
 
   // ===== Public URL =====
   const urlBox = document.createElement("div");
@@ -467,7 +298,7 @@ function renderEditor() {
 
   const urlLabel = document.createElement("div");
   urlLabel.className = "public-url-label";
-  urlLabel.textContent = "Public card URL";
+  urlLabel.textContent = "PUBLIC CARD URL";
 
   const urlInput = document.createElement("input");
   urlInput.className = "public-url-input";
