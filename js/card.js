@@ -63,6 +63,7 @@ async function loadCard() {
 
   // Render public view
   viewRoot.innerHTML = `
+  <div class="card-shell">
     <div class="public-top">
       ${photo}
       <h2>${data.handle || "@user"}</h2>
