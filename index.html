@@ -2,18 +2,94 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>TagMe NFC Card Editor</title>
+  <title>TagMe Dashboard</title>
   <link rel="stylesheet" href="css/style.css">
+
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      height: 100vh;
+      background: #0a0a0a;
+      color: white;
+      font-family: system-ui, sans-serif;
+    }
+
+    .box {
+      width: 90%;
+      max-width: 420px;
+      padding: 32px;
+      background: #111;
+      border-radius: 16px;
+      box-shadow: 0 0 40px rgba(0,0,0,0.5);
+      text-align: center;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px;
+      border-radius: 10px;
+      border: none;
+      margin-top: 10px;
+      margin-bottom: 20px;
+      background: #1a1a1a;
+      color: white;
+      font-size: 15px;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      border-radius: 10px;
+      border: none;
+      margin-top: 10px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    .btn-main {
+      background: #2f55ff;
+      color: white;
+    }
+
+    .btn-sec {
+      background: #222;
+      color: white;
+      border: 1px solid #444;
+    }
+  </style>
 </head>
 <body>
-  <div class="public-card">
-    <div class="public-top">
-      <h2>TagMe NFC Card</h2>
-      <p>Create and edit your own smart contact card.</p>
-    </div>
-    <div class="public-links">
-      <a href="edit.html" class="public-link">Create / Edit a Card</a>
-    </div>
+
+  <div class="box">
+    <h2>TagMe Card Manager</h2>
+    <p style="opacity:0.7; margin-top:-5px;">Create or edit digital NFC cards</p>
+
+    <!-- EXISTING CARD -->
+    <input id="existingId" type="text" placeholder="Enter existing card ID">
+    <button class="btn-sec" onclick="editExisting()">Edit Card</button>
+
+    <!-- CREATE NEW -->
+    <button class="btn-main" onclick="createNew()">Create New Card</button>
   </div>
+
+  <script>
+    function editExisting() {
+      let id = document.getElementById('existingId').value.trim();
+      if (!id) {
+        alert("Please enter a card ID.");
+        return;
+      }
+      window.location.href = "edit.html?id=" + id;
+    }
+
+    function createNew() {
+      let id = Math.random().toString(36).substring(2, 10);
+      window.location.href = "edit.html?id=" + id;
+    }
+  </script>
+
 </body>
 </html>
