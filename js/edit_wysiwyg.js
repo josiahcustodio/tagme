@@ -1,5 +1,6 @@
 // edit_wysiwyg.js
 // Cloud-only WYSIWYG editor using Supabase (no localStorage)
+// Uses global client: window.sb (defined in edit.html)
 
 // ----- Get / generate card ID from URL -----
 const url = new URL(window.location.href);
@@ -20,18 +21,17 @@ let card = {
   links: []
 };
 
-// ----- Load from Supabase (if card already exists) -----
+// ----- Load from Supabase -----
 async function loadCardFromSupabase() {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await window.sb
       .from("cards")
       .select("*")
       .eq("id", id)
       .maybeSingle();
 
     if (error && error.code !== "PGRST116") {
-      // PGRST116 = no rows found, ignore that
-      console.error("Error loading card:", error);
+      console.error("Error loading:", error);
     }
 
     if (data) {
@@ -51,35 +51,34 @@ async function loadCardFromSupabase() {
   renderEditor();
 }
 
-// ----- Save to Supabase (cloud only) -----
+// ----- Save to Supabase -----
 async function saveFinal() {
   const cardData = {
     id,
     handle: card.handle,
     title: card.title,
     subtitle: card.subtitle,
-    photo_url: card.photo_url || "",
+    photo_url: card.photo_url,
     links: card.links
   };
 
-  const { error } = await supabase
+  const { error } = await window.sb
     .from("cards")
     .upsert(cardData);
 
   if (error) {
-    console.error(error);
     alert("Error saving: " + error.message);
   } else {
     alert("Saved to cloud!");
   }
 }
 
-// ----- Render WYSIWYG editor -----
+// ----- Render Editor -----
 function renderEditor() {
   const root = document.getElementById("editorCard");
   root.innerHTML = "";
 
-  // ---------- Header (Photo + Text fields) ----------
+  // ----- Header -----
   const header = document.createElement("div");
   header.className = "card-header";
 
@@ -91,7 +90,7 @@ function renderEditor() {
   img.src = card.photo_url || "";
   img.alt = "Profile photo";
 
-  // CLICK TO UPLOAD PHOTO (Supabase Storage)
+  // CLICK TO UPLOAD IMAGE
   img.onclick = () => {
     const picker = document.createElement("input");
     picker.type = "file";
@@ -101,10 +100,10 @@ function renderEditor() {
       const file = picker.files[0];
       if (!file) return;
 
-      const fileName = id + "_photo_" + Date.now();
+      const fileName = `${id}_photo_${Date.now()}`;
 
-      // Upload to Supabase Storage (bucket: profile-photos)
-      const { error: uploadError } = await supabase
+      // Upload to Supabase Storage
+      const { error: uploadError } = await window.sb
         .storage
         .from("profile-photos")
         .upload(fileName, file, {
@@ -113,20 +112,18 @@ function renderEditor() {
         });
 
       if (uploadError) {
-        console.error(uploadError);
-        alert("Photo upload failed: " + uploadError.message);
+        alert("Upload failed: " + uploadError.message);
         return;
       }
 
       // Get public URL
-      const { data } = supabase
+      const { data } = window.sb
         .storage
         .from("profile-photos")
         .getPublicUrl(fileName);
 
       card.photo_url = data.publicUrl;
-
-      renderEditor(); // re-render with new photo
+      renderEditor();
     };
 
     picker.click();
@@ -146,28 +143,19 @@ function renderEditor() {
   const handleInput = document.createElement("input");
   handleInput.className = "card-input handle";
   handleInput.value = card.handle;
-  handleInput.placeholder = "@yourhandle";
-  handleInput.oninput = () => {
-    card.handle = handleInput.value;
-  };
+  handleInput.oninput = () => (card.handle = handleInput.value);
 
   // Title
   const titleInput = document.createElement("input");
   titleInput.className = "card-input title";
   titleInput.value = card.title;
-  titleInput.placeholder = "Your title";
-  titleInput.oninput = () => {
-    card.title = titleInput.value;
-  };
+  titleInput.oninput = () => (card.title = titleInput.value);
 
   // Subtitle
   const subInput = document.createElement("input");
   subInput.className = "card-input subtitle";
   subInput.value = card.subtitle;
-  subInput.placeholder = "Short description";
-  subInput.oninput = () => {
-    card.subtitle = subInput.value;
-  };
+  subInput.oninput = () => (card.subtitle = subInput.value);
 
   textFields.appendChild(handleInput);
   textFields.appendChild(titleInput);
@@ -177,12 +165,10 @@ function renderEditor() {
   header.appendChild(textFields);
   root.appendChild(header);
 
-  // ---------- Divider ----------
-  const divider = document.createElement("div");
-  divider.className = "card-divider";
-  root.appendChild(divider);
+  // Divider
+  root.appendChild(Object.assign(document.createElement("div"), { className: "card-divider" }));
 
-  // ---------- Links ----------
+  // ----- Links -----
   const linksTitle = document.createElement("div");
   linksTitle.className = "links-area-title";
   linksTitle.textContent = "Links";
@@ -197,11 +183,8 @@ function renderEditor() {
 
     const labelInput = document.createElement("input");
     labelInput.className = "link-label-input";
-    labelInput.placeholder = "Label (Facebook, IG, etc)";
     labelInput.value = link.label || "";
-    labelInput.oninput = () => {
-      card.links[index].label = labelInput.value;
-    };
+    labelInput.oninput = () => (card.links[index].label = labelInput.value);
 
     const delBtn = document.createElement("button");
     delBtn.className = "link-delete-btn";
@@ -216,19 +199,14 @@ function renderEditor() {
 
     const urlInput = document.createElement("input");
     urlInput.className = "link-url-input";
-    urlInput.placeholder = "https://yourlink.com";
     urlInput.value = link.url || "";
-    urlInput.oninput = () => {
-      card.links[index].url = urlInput.value;
-    };
+    urlInput.oninput = () => (card.links[index].url = urlInput.value);
 
     row.appendChild(top);
     row.appendChild(urlInput);
-
     root.appendChild(row);
   });
 
-  // Add link
   const addBtn = document.createElement("button");
   addBtn.className = "add-link-btn";
   addBtn.textContent = "+ Add link";
@@ -246,27 +224,25 @@ function renderEditor() {
   urlLabel.className = "public-url-label";
   urlLabel.textContent = "Public card URL";
 
-  const urlInputPublic = document.createElement("input");
-  urlInputPublic.className = "public-url-input";
-  urlInputPublic.value = `${window.location.origin.replace("file://", "")}/card.html?id=${id}`;
-  urlInputPublic.readOnly = true;
+  const urlInput = document.createElement("input");
+  urlInput.className = "public-url-input";
+  urlInput.value = `${window.location.origin}/card.html?id=${id}`;
+  urlInput.readOnly = true;
 
   urlBox.appendChild(urlLabel);
-  urlBox.appendChild(urlInputPublic);
+  urlBox.appendChild(urlInput);
   root.appendChild(urlBox);
 
-  // ---------- SAVE BUTTON ----------
+  // ----- SAVE BUTTON -----
   const saveBtn = document.createElement("button");
   saveBtn.className = "add-link-btn";
   saveBtn.textContent = "Save Changes";
   saveBtn.style.background = "#3c6aff";
   saveBtn.style.color = "white";
-  saveBtn.style.border = "none";
-  saveBtn.style.marginTop = "16px";
   saveBtn.onclick = saveFinal;
 
   root.appendChild(saveBtn);
 }
 
-// ----- Start: load from Supabase then render -----
+// Start editor
 loadCardFromSupabase();
