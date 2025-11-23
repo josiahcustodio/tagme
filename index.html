@@ -1,95 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>TagMe Dashboard</title>
-  <link rel="stylesheet" href="css/style.css">
-
-  <style>
-    body {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-      height: 100vh;
-      background: #0a0a0a;
-      color: white;
-      font-family: system-ui, sans-serif;
-    }
-
-    .box {
-      width: 90%;
-      max-width: 420px;
-      padding: 32px;
-      background: #111;
-      border-radius: 16px;
-      box-shadow: 0 0 40px rgba(0,0,0,0.5);
-      text-align: center;
-    }
-
-    input {
-      width: 100%;
-      padding: 14px;
-      border-radius: 10px;
-      border: none;
-      margin-top: 10px;
-      margin-bottom: 20px;
-      background: #1a1a1a;
-      color: white;
-      font-size: 15px;
-    }
-
-    button {
-      width: 100%;
-      padding: 14px;
-      border-radius: 10px;
-      border: none;
-      margin-top: 10px;
-      cursor: pointer;
-      font-size: 16px;
-    }
-
-    .btn-main {
-      background: #2f55ff;
-      color: white;
-    }
-
-    .btn-sec {
-      background: #222;
-      color: white;
-      border: 1px solid #444;
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <title>TagMe NFC – Dashboard</title>
+  <link rel="stylesheet" href="css/style.css" />
 </head>
-<body>
+<body class="app-body">
+  <div class="app-shell">
+    <h1 class="app-title">TagMe NFC</h1>
+    <p class="app-subtitle">Manage your NFC profile card.</p>
 
-  <div class="box">
-    <h2>TagMe Card Manager</h2>
-    <p style="opacity:0.7; margin-top:-5px;">Create or edit digital NFC cards</p>
+    <div class="launcher-card">
+      <label class="launcher-label">Card ID</label>
+      <input
+        id="cardIdInput"
+        class="launcher-input"
+        placeholder="e.g. test123"
+      />
 
-    <!-- EXISTING CARD -->
-    <input id="existingId" type="text" placeholder="Enter existing card ID">
-    <button class="btn-sec" onclick="editExisting()">Edit Card</button>
+      <div class="launcher-actions">
+        <button id="editBtn" class="primary-btn">Open Editor</button>
+        <button id="viewBtn" class="ghost-btn">Open Public Card</button>
+      </div>
 
-    <!-- CREATE NEW -->
-    <button class="btn-main" onclick="createNew()">Create New Card</button>
+      <p class="launcher-hint">
+        This ID is usually encoded inside your NFC card URL.
+      </p>
+    </div>
   </div>
 
   <script>
-    function editExisting() {
-      let id = document.getElementById('existingId').value.trim();
-      if (!id) {
-        alert("Please enter a card ID.");
-        return;
-      }
-      window.location.href = "edit.html?id=" + id;
+    const input = document.getElementById("cardIdInput");
+    const editBtn = document.getElementById("editBtn");
+    const viewBtn = document.getElementById("viewBtn");
+
+    function getId() {
+      return (input.value || "").trim() || "test123";
     }
 
-    function createNew() {
-      let id = Math.random().toString(36).substring(2, 10);
-      window.location.href = "edit.html?id=" + id;
-    }
+    editBtn.onclick = () => {
+      const id = getId();
+      window.location.href = `edit.html?id=${encodeURIComponent(id)}`;
+    };
+
+    viewBtn.onclick = () => {
+      const id = getId();
+      window.location.href = `card.html?id=${encodeURIComponent(id)}`;
+    };
   </script>
-
 </body>
 </html>
