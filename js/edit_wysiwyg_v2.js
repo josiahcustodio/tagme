@@ -22,6 +22,7 @@ let card = {
   title: "Your title here",
   subtitle: "Short description here",
   photo_url: "",
+  photo_b64: "",   // ← BASE64 added
   links: [],
   country_code: "+63",
   phone: "",
@@ -50,6 +51,7 @@ async function loadCardFromSupabase() {
         title: data.title || "Your title here",
         subtitle: data.subtitle || "Short description here",
         photo_url: data.photo_url || "",
+        photo_b64: data.photo_b64 || "",  // ← load base64 if exists
         links: Array.isArray(data.links) ? data.links : [],
         country_code: data.country_code || "+63",
         phone: data.phone || "",
@@ -76,6 +78,16 @@ async function saveFinal() {
   } else {
     alert("Saved to cloud!");
   }
+}
+
+// ===== Helper: Convert File → Base64 =====
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(",")[1]); // remove prefix
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 // ===== Render UI =====
@@ -107,6 +119,7 @@ function renderEditor() {
 
       const fileName = `${id}_photo_${Date.now()}`;
 
+      // Upload to Supabase Storage
       const { error: uploadError } = await window.sb.storage
         .from("profile-photos")
         .upload(fileName, file, { cacheControl: "3600", upsert: true });
@@ -116,11 +129,20 @@ function renderEditor() {
         return;
       }
 
+      // Get public URL
       const { data } = window.sb.storage
         .from("profile-photos")
         .getPublicUrl(fileName);
 
       card.photo_url = data.publicUrl;
+
+      // ---- BASE64 CONVERSION ----
+      try {
+        card.photo_b64 = await fileToBase64(file);
+      } catch (e) {
+        console.warn("Base64 conversion failed:", e);
+      }
+
       renderEditor();
     };
 
