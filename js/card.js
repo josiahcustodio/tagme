@@ -65,31 +65,44 @@ function buildVCard(data, photoDataUrl) {
   lines.push("BEGIN:VCARD");
   lines.push("VERSION:3.0");
 
-  const fullName = sanitize(
-  data.title?.trim() ||
-  data.handle?.trim() ||
-  "Contact"
-);
+  // Determine full name (use title/name first)
+  let fullName = sanitize(
+    data.title?.trim() ||
+    data.handle?.replace("@","").trim() ||
+    "Contact"
+  );
 
-lines.push(`FN:${fullName}`);
+  // Split into first + last for N:
+  let parts = fullName.split(" ");
+  let lastName = parts.length > 1 ? parts.pop() : "";
+  let firstName = parts.join(" ");
 
+  // Required by many phones
+  lines.push(`FN:${fullName}`);
+  lines.push(`N:${lastName};${firstName};;;`);
+
+  // Phone
   const tel = (data.country_code || "") + (data.phone || "");
   if (tel.trim()) {
     lines.push(`TEL;TYPE=CELL:${tel}`);
   }
 
+  // Email
   if (data.email) {
     lines.push(`EMAIL;TYPE=INTERNET:${sanitize(data.email)}`);
   }
 
+  // Organization
   if (data.org) {
     lines.push(`ORG:${sanitize(data.org)}`);
   }
 
+  // Role
   if (data.role) {
     lines.push(`TITLE:${sanitize(data.role)}`);
   }
 
+  // Photo
   if (photoDataUrl) {
     const base64 = photoDataUrl.split(",")[1] || "";
     if (base64) {
@@ -100,6 +113,7 @@ lines.push(`FN:${fullName}`);
   lines.push("END:VCARD");
   return lines.join("\r\n");
 }
+
 
 async function handleSaveContact(data) {
   let photoDataUrl = null;
