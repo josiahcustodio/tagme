@@ -1,6 +1,5 @@
 // edit_wysiwyg_v2.js
-// Cloud-only WYSIWYG editor using Supabase (no localStorage)
-// Uses global client: window.sb (defined in edit.html)
+// Cloud-only editor using Supabase (no localStorage)
 
 // ===== Safety Check =====
 if (!window.sb) {
@@ -8,8 +7,8 @@ if (!window.sb) {
 }
 
 // ===== Get / Generate Card ID =====
-const url = new URL(window.location.href);
-let id = url.searchParams.get("id");
+const editUrl = new URL(window.location.href);
+let id = editUrl.searchParams.get("id");
 
 if (!id) {
   id = Math.random().toString(36).slice(2, 10);
@@ -84,17 +83,18 @@ function renderEditor() {
   const root = document.getElementById("editorCard");
   root.innerHTML = "";
 
-  // ===== HEADER =====
+  // ---------- HEADER ----------
   const header = document.createElement("div");
   header.className = "card-header";
 
+  // Photo
   const photoWrap = document.createElement("div");
   photoWrap.className = "profile-photo-wrapper";
 
   const img = document.createElement("img");
   img.className = "profile-photo";
   img.src = card.photo_url || "";
-  img.alt = "Profile";
+  img.alt = "Profile photo";
 
   img.onclick = () => {
     const picker = document.createElement("input");
@@ -107,7 +107,6 @@ function renderEditor() {
 
       const fileName = `${id}_photo_${Date.now()}`;
 
-      // Upload to Supabase Storage
       const { error: uploadError } = await window.sb.storage
         .from("profile-photos")
         .upload(fileName, file, { cacheControl: "3600", upsert: true });
@@ -117,7 +116,6 @@ function renderEditor() {
         return;
       }
 
-      // Get Public URL
       const { data } = window.sb.storage
         .from("profile-photos")
         .getPublicUrl(fileName);
@@ -136,21 +134,25 @@ function renderEditor() {
   photoWrap.appendChild(img);
   photoWrap.appendChild(hint);
 
+  // Text fields
   const textFields = document.createElement("div");
   textFields.className = "card-text-fields";
 
   const handleInput = document.createElement("input");
   handleInput.className = "card-input handle";
+  handleInput.placeholder = "@yourhandle";
   handleInput.value = card.handle;
   handleInput.oninput = () => (card.handle = handleInput.value);
 
   const titleInput = document.createElement("input");
   titleInput.className = "card-input title";
+  titleInput.placeholder = "Your title";
   titleInput.value = card.title;
   titleInput.oninput = () => (card.title = titleInput.value);
 
   const subtitleInput = document.createElement("input");
   subtitleInput.className = "card-input subtitle";
+  subtitleInput.placeholder = "Short description";
   subtitleInput.value = card.subtitle;
   subtitleInput.oninput = () => (card.subtitle = subtitleInput.value);
 
@@ -162,10 +164,12 @@ function renderEditor() {
   header.appendChild(textFields);
   root.appendChild(header);
 
-  // ===== DIVIDER =====
-  root.appendChild(Object.assign(document.createElement("div"), { className: "card-divider" }));
+  // ---------- DIVIDER ----------
+  root.appendChild(
+    Object.assign(document.createElement("div"), { className: "card-divider" })
+  );
 
-  // ===== LINKS =====
+  // ---------- LINKS ----------
   const linksTitle = document.createElement("div");
   linksTitle.className = "links-area-title";
   linksTitle.textContent = "LINKS";
@@ -180,8 +184,8 @@ function renderEditor() {
 
     const labelInput = document.createElement("input");
     labelInput.className = "link-label-input";
-    labelInput.value = link.label;
-    labelInput.placeholder = "Label";
+    labelInput.placeholder = "Label (Facebook, IG, etc)";
+    labelInput.value = link.label || "";
     labelInput.oninput = () => (card.links[index].label = labelInput.value);
 
     const deleteBtn = document.createElement("button");
@@ -197,8 +201,8 @@ function renderEditor() {
 
     const urlInput = document.createElement("input");
     urlInput.className = "link-url-input";
-    urlInput.value = link.url;
     urlInput.placeholder = "https://yourlink.com";
+    urlInput.value = link.url || "";
     urlInput.oninput = () => (card.links[index].url = urlInput.value);
 
     row.appendChild(top);
@@ -215,7 +219,7 @@ function renderEditor() {
   };
   root.appendChild(addBtn);
 
-  // ===== CONTACT INFO =====
+  // ---------- CONTACT INFO ----------
   const contactTitle = document.createElement("div");
   contactTitle.className = "links-area-title";
   contactTitle.textContent = "CONTACT INFORMATION";
@@ -229,13 +233,13 @@ function renderEditor() {
 
   const ccInput = document.createElement("input");
   ccInput.className = "contact-cc";
-  ccInput.value = card.country_code;
+  ccInput.value = card.country_code || "+63";
   ccInput.oninput = () => (card.country_code = ccInput.value);
 
   const phoneInput = document.createElement("input");
   phoneInput.className = "contact-phone";
-  phoneInput.value = card.phone;
   phoneInput.placeholder = "Phone number";
+  phoneInput.value = card.phone || "";
   phoneInput.oninput = () => (card.phone = phoneInput.value);
 
   phoneRow.appendChild(ccInput);
@@ -244,28 +248,28 @@ function renderEditor() {
 
   const emailInput = document.createElement("input");
   emailInput.className = "contact-input";
-  emailInput.value = card.email;
   emailInput.placeholder = "Email (optional)";
+  emailInput.value = card.email || "";
   emailInput.oninput = () => (card.email = emailInput.value);
   contactContainer.appendChild(emailInput);
 
   const orgInput = document.createElement("input");
   orgInput.className = "contact-input";
-  orgInput.value = card.org;
-  orgInput.placeholder = "Organization (optional)";
+  orgInput.placeholder = "Organization / Company (optional)";
+  orgInput.value = card.org || "";
   orgInput.oninput = () => (card.org = orgInput.value);
   contactContainer.appendChild(orgInput);
 
   const roleInput = document.createElement("input");
   roleInput.className = "contact-input";
-  roleInput.value = card.role;
   roleInput.placeholder = "Role / Position (optional)";
+  roleInput.value = card.role || "";
   roleInput.oninput = () => (card.role = roleInput.value);
   contactContainer.appendChild(roleInput);
 
   root.appendChild(contactContainer);
 
-  // ===== PUBLIC URL =====
+  // ---------- PUBLIC URL ----------
   const urlBox = document.createElement("div");
   urlBox.className = "public-url-box";
 
@@ -284,7 +288,7 @@ function renderEditor() {
   urlBox.appendChild(urlInput);
   root.appendChild(urlBox);
 
-  // ===== SAVE BUTTON =====
+  // ---------- SAVE BUTTON ----------
   const saveBtn = document.createElement("button");
   saveBtn.className = "add-link-btn";
   saveBtn.textContent = "Save Changes";
@@ -295,5 +299,5 @@ function renderEditor() {
   root.appendChild(saveBtn);
 }
 
-// ===== Start =====
+// Start
 loadCardFromSupabase();
