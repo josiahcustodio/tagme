@@ -1,12 +1,10 @@
 // edit_wysiwyg_v2.js
-// Cloud-only editor using Supabase (no localStorage)
+// Cloud-only NFC editor using Supabase
 
 // ===== Safety Check =====
-if (!window.sb) {
-  console.error("Supabase client not found. Check script order in edit.html.");
-}
+if (!window.sb) console.error("Supabase client missing — check edit.html");
 
-// ===== Get / Generate Card ID =====
+// ===== Get/Generate Card ID =====
 const editUrl = new URL(window.location.href);
 let id = editUrl.searchParams.get("id");
 
@@ -19,9 +17,9 @@ if (!id) {
 let card = {
   id,
   full_name: "",
-  handle: "@yourhandle",   // hidden from UI but kept for login
-  title: "Your title here",
-  subtitle: "Short description here",
+  handle: "@yourhandle",
+  title: "",
+  subtitle: "",
   photo_url: "",
   photo_b64: "",
   links: [],
@@ -32,72 +30,44 @@ let card = {
   role: ""
 };
 
-// ===== Load Card From Supabase =====
+// ===== Load Card =====
 async function loadCardFromSupabase() {
-  try {
-    const { data, error } = await window.sb
-      .from("cards")
-      .select("*")
-      .eq("id", id)
-      .maybeSingle();
+  const { data, error } = await window.sb
+    .from("cards")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
 
-    if (error && error.code !== "PGRST116") {
-      console.error("Load error:", error);
-    }
-
-    if (data) {
-      card = {
-        id,
-        full_name: data.full_name || "",
-        handle: data.handle || "@yourhandle",
-        title: data.title || "Your title here",
-        subtitle: data.subtitle || "Short description here",
-        photo_url: data.photo_url || "",
-        photo_b64: data.photo_b64 || "",
-        links: Array.isArray(data.links) ? data.links : [],
-        country_code: data.country_code || "+63",
-        phone: data.phone || "",
-        email: data.email || "",
-        org: data.org || "",
-        role: data.role || ""
-      };
-    }
-  } catch (err) {
-    console.error("Unexpected load error:", err);
+  if (data) {
+    card = { ...card, ...data };
   }
 
   renderEditor();
 }
 
-// ===== Save to Supabase =====
+// ===== Save =====
 async function saveFinal() {
-  const payload = { ...card };
-
-  const { error } = await window.sb.from("cards").upsert(payload);
-
-  if (error) {
-    alert("Error saving: " + error.message);
-  } else {
-    alert("Saved to cloud!");
-  }
+  const { error } = await window.sb.from("cards").upsert(card);
+  if (error) alert("Save error: " + error.message);
+  else alert("Saved!");
 }
 
-// ===== Helper: Convert File → Base64 =====
+// ===== File → Base64 =====
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result.split(",")[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+    const r = new FileReader();
+    r.onload = () => resolve(r.result.split(",")[1]);
+    r.onerror = reject;
+    r.readAsDataURL(file);
   });
 }
 
-// ===== Render UI =====
+// ===== Render Editor =====
 function renderEditor() {
   const root = document.getElementById("editorCard");
   root.innerHTML = "";
 
-  // ---------- HEADER ----------
+  // HEADER
   const header = document.createElement("div");
   header.className = "card-header";
 
@@ -108,27 +78,19 @@ function renderEditor() {
   const img = document.createElement("img");
   img.className = "profile-photo";
   img.src = card.photo_url || "";
-  img.alt = "Profile photo";
-
   img.onclick = () => {
-    const picker = document.createElement("input");
-    picker.type = "file";
-    picker.accept = "image/*";
-
-    picker.onchange = async () => {
-      const file = picker.files[0];
+    const pick = document.createElement("input");
+    pick.type = "file";
+    pick.accept = "image/*";
+    pick.onchange = async () => {
+      const file = pick.files[0];
       if (!file) return;
 
       const fileName = `${id}_photo_${Date.now()}`;
 
-      const { error: uploadError } = await window.sb.storage
+      await window.sb.storage
         .from("profile-photos")
-        .upload(fileName, file, { cacheControl: "3600", upsert: true });
-
-      if (uploadError) {
-        alert("Upload failed: " + uploadError.message);
-        return;
-      }
+        .upload(fileName, file, { upsert: true });
 
       const { data } = window.sb.storage
         .from("profile-photos")
@@ -139,8 +101,7 @@ function renderEditor() {
 
       renderEditor();
     };
-
-    picker.click();
+    pick.click();
   };
 
   const hint = document.createElement("div");
@@ -150,176 +111,166 @@ function renderEditor() {
   photoWrap.appendChild(img);
   photoWrap.appendChild(hint);
 
-  // Text fields
+  // TEXT FIELDS
   const textFields = document.createElement("div");
   textFields.className = "card-text-fields";
 
-  // FULL NAME FIELD
-  const nameInput = document.createElement("input");
-  nameInput.className = "card-input name";
-  nameInput.placeholder = "Full Name";
-  nameInput.value = card.full_name || "";
-  nameInput.oninput = () => (card.full_name = nameInput.value);
+  const fullName = document.createElement("input");
+  fullName.className = "card-input title";
+  fullName.placeholder = "Full Name";
+  fullName.value = card.full_name;
+  fullName.oninput = () => (card.full_name = fullName.value);
 
-  // HIDDEN HANDLE (NOT SHOWN IN UI)
-  const handleInput = document.createElement("input");
-  handleInput.type = "hidden";
-  handleInput.value = card.handle;
+  const title = document.createElement("input");
+  title.className = "card-input subtitle";
+  title.placeholder = "Your Title";
+  title.value = card.title;
+  title.oninput = () => (card.title = title.value);
 
-  // TITLE
-  const titleInput = document.createElement("input");
-  titleInput.className = "card-input title";
-  titleInput.placeholder = "Your title";
-  titleInput.value = card.title;
-  titleInput.oninput = () => (card.title = titleInput.value);
+  const subtitle = document.createElement("input");
+  subtitle.className = "card-input subtitle";
+  subtitle.placeholder = "Short Description";
+  subtitle.value = card.subtitle;
+  subtitle.oninput = () => (card.subtitle = subtitle.value);
 
-  // SUBTITLE (short description)
-  const subtitleInput = document.createElement("input");
-  subtitleInput.className = "card-input subtitle";
-  subtitleInput.placeholder = "Short description";
-  subtitleInput.value = card.subtitle;
-  subtitleInput.oninput = () => (card.subtitle = subtitleInput.value);
-
-  textFields.appendChild(nameInput);
-  textFields.appendChild(titleInput);
-  textFields.appendChild(subtitleInput);
+  textFields.appendChild(fullName);    // NEW
+  textFields.appendChild(title);
+  textFields.appendChild(subtitle);
 
   header.appendChild(photoWrap);
   header.appendChild(textFields);
   root.appendChild(header);
 
-  // ---------- DIVIDER ----------
+  // Divider
   root.appendChild(Object.assign(document.createElement("div"), { className: "card-divider" }));
 
-  // ---------- LINKS ----------
+  // LINKS
   const linksTitle = document.createElement("div");
   linksTitle.className = "links-area-title";
   linksTitle.textContent = "LINKS";
   root.appendChild(linksTitle);
 
-  card.links.forEach((link, index) => {
+  card.links.forEach((link, i) => {
     const row = document.createElement("div");
     row.className = "link-row";
 
     const top = document.createElement("div");
     top.className = "link-row-top";
 
-    const labelInput = document.createElement("input");
-    labelInput.className = "link-label-input";
-    labelInput.placeholder = "Label (Facebook, IG, etc)";
-    labelInput.value = link.label || "";
-    labelInput.oninput = () => (card.links[index].label = labelInput.value);
+    const lbl = document.createElement("input");
+    lbl.className = "link-label-input";
+    lbl.placeholder = "Label";
+    lbl.value = link.label || "";
+    lbl.oninput = () => (card.links[i].label = lbl.value);
 
-    const deleteBtn = document.createElement("button");
-    deleteBtn.className = "link-delete-btn";
-    deleteBtn.textContent = "×";
-    deleteBtn.onclick = () => {
-      card.links.splice(index, 1);
+    const del = document.createElement("button");
+    del.className = "link-delete-btn";
+    del.textContent = "×";
+    del.onclick = () => {
+      card.links.splice(i, 1);
       renderEditor();
     };
 
-    top.appendChild(labelInput);
-    top.appendChild(deleteBtn);
+    const url = document.createElement("input");
+    url.className = "link-url-input";
+    url.placeholder = "https://";
+    url.value = link.url || "";
+    url.oninput = () => (card.links[i].url = url.value);
 
-    const urlInput = document.createElement("input");
-    urlInput.className = "link-url-input";
-    urlInput.placeholder = "https://yourlink.com";
-    urlInput.value = link.url || "";
-    urlInput.oninput = () => (card.links[index].url = urlInput.value);
+    top.appendChild(lbl);
+    top.appendChild(del);
 
     row.appendChild(top);
-    row.appendChild(urlInput);
+    row.appendChild(url);
     root.appendChild(row);
   });
 
-  const addBtn = document.createElement("button");
-  addBtn.className = "add-link-btn";
-  addBtn.textContent = "+ Add link";
-  addBtn.onclick = () => {
+  const add = document.createElement("button");
+  add.className = "add-link-btn";
+  add.textContent = "+ Add link";
+  add.onclick = () => {
     card.links.push({ label: "", url: "" });
     renderEditor();
   };
-  root.appendChild(addBtn);
+  root.appendChild(add);
 
-  // ---------- CONTACT INFO ----------
-  const contactTitle = document.createElement("div");
-  contactTitle.className = "links-area-title";
-  contactTitle.textContent = "CONTACT INFORMATION";
-  root.appendChild(contactTitle);
+  // CONTACT INFO
+  const ciTitle = document.createElement("div");
+  ciTitle.className = "links-area-title";
+  ciTitle.textContent = "CONTACT INFORMATION";
+  root.appendChild(ciTitle);
 
-  const contactContainer = document.createElement("div");
-  contactContainer.className = "contact-container";
+  const contactBox = document.createElement("div");
+  contactBox.className = "contact-container";
 
   const phoneRow = document.createElement("div");
   phoneRow.className = "phone-row";
 
-  const ccInput = document.createElement("input");
-  ccInput.className = "contact-cc";
-  ccInput.value = card.country_code || "+63";
-  ccInput.oninput = () => (card.country_code = ccInput.value);
+  const cc = document.createElement("input");
+  cc.className = "contact-cc";
+  cc.value = card.country_code;
+  cc.oninput = () => (card.country_code = cc.value);
 
-  const phoneInput = document.createElement("input");
-  phoneInput.className = "contact-phone";
-  phoneInput.placeholder = "Phone number";
-  phoneInput.value = card.phone || "";
-  phoneInput.oninput = () => (card.phone = phoneInput.value);
+  const phone = document.createElement("input");
+  phone.className = "contact-phone";
+  phone.placeholder = "Phone number";
+  phone.value = card.phone;
+  phone.oninput = () => (card.phone = phone.value);
 
-  phoneRow.appendChild(ccInput);
-  phoneRow.appendChild(phoneInput);
-  contactContainer.appendChild(phoneRow);
+  phoneRow.appendChild(cc);
+  phoneRow.appendChild(phone);
 
-  const emailInput = document.createElement("input");
-  emailInput.className = "contact-input";
-  emailInput.placeholder = "Email (optional)";
-  emailInput.value = card.email || "";
-  emailInput.oninput = () => (card.email = emailInput.value);
-  contactContainer.appendChild(emailInput);
+  const email = document.createElement("input");
+  email.className = "contact-input";
+  email.placeholder = "Email";
+  email.value = card.email;
+  email.oninput = () => (card.email = email.value);
 
-  const orgInput = document.createElement("input");
-  orgInput.className = "contact-input";
-  orgInput.placeholder = "Organization (optional)";
-  orgInput.value = card.org || "";
-  orgInput.oninput = () => (card.org = orgInput.value);
-  contactContainer.appendChild(orgInput);
+  const org = document.createElement("input");
+  org.className = "contact-input";
+  org.placeholder = "Organization";
+  org.value = card.org;
+  org.oninput = () => (card.org = org.value);
 
-  const roleInput = document.createElement("input");
-  roleInput.className = "contact-input";
-  roleInput.placeholder = "Role / Position (optional)";
-  roleInput.value = card.role || "";
-  roleInput.oninput = () => (card.role = roleInput.value);
-  contactContainer.appendChild(roleInput);
+  const role = document.createElement("input");
+  role.className = "contact-input";
+  role.placeholder = "Role";
+  role.value = card.role;
+  role.oninput = () => (card.role = role.value);
 
-  root.appendChild(contactContainer);
+  contactBox.appendChild(phoneRow);
+  contactBox.appendChild(email);
+  contactBox.appendChild(org);
+  contactBox.appendChild(role);
 
-  // ---------- PUBLIC URL ----------
+  root.appendChild(contactBox);
+
+  // PUBLIC URL
   const urlBox = document.createElement("div");
   urlBox.className = "public-url-box";
 
-  const urlLabel = document.createElement("div");
-  urlLabel.className = "public-url-label";
-  urlLabel.textContent = "PUBLIC CARD URL";
+  const lbl = document.createElement("div");
+  lbl.className = "public-url-label";
+  lbl.textContent = "PUBLIC CARD URL";
 
   const urlInput = document.createElement("input");
   urlInput.className = "public-url-input";
-
-  const base = window.location.origin + "/tagme";
-  urlInput.value = `${base}/card.html?id=${id}`;
+  urlInput.value = `${window.location.origin}/tagme/card.html?id=${id}`;
   urlInput.readOnly = true;
 
-  urlBox.appendChild(urlLabel);
+  urlBox.appendChild(lbl);
   urlBox.appendChild(urlInput);
   root.appendChild(urlBox);
 
-  // ---------- SAVE BUTTON ----------
-  const saveBtn = document.createElement("button");
-  saveBtn.className = "add-link-btn";
-  saveBtn.textContent = "Save Changes";
-  saveBtn.style.background = "#3c6aff";
-  saveBtn.style.color = "white";
-  saveBtn.onclick = saveFinal;
+  // SAVE BUTTON
+  const save = document.createElement("button");
+  save.className = "add-link-btn";
+  save.textContent = "Save Changes";
+  save.style.background = "#3c6aff";
+  save.style.color = "white";
+  save.onclick = saveFinal;
 
-  root.appendChild(saveBtn);
+  root.appendChild(save);
 }
 
-// Start
 loadCardFromSupabase();
