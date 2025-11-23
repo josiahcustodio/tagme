@@ -2,12 +2,12 @@
 // Cloud-only WYSIWYG editor using Supabase (no localStorage)
 // Uses global client: window.sb (defined in edit.html)
 
-// ====== Safety check ======
+// ===== Safety Check =====
 if (!window.sb) {
-  console.error("Supabase client (window.sb) not found. Check edit.html script order.");
+  console.error("Supabase client not found. Check script order in edit.html.");
 }
 
-// ====== Get / generate card ID ======
+// ===== Get / Generate Card ID =====
 const url = new URL(window.location.href);
 let id = url.searchParams.get("id");
 
@@ -16,7 +16,7 @@ if (!id) {
   window.location.href = `edit.html?id=${id}`;
 }
 
-// ====== Internal Data ======
+// ===== Default Card Object =====
 let card = {
   id,
   handle: "@yourhandle",
@@ -24,7 +24,6 @@ let card = {
   subtitle: "Short description here",
   photo_url: "",
   links: [],
-  // contact fields for VCF / Save contact
   country_code: "+63",
   phone: "",
   email: "",
@@ -32,7 +31,7 @@ let card = {
   role: ""
 };
 
-// ====== Load Card From Supabase ======
+// ===== Load Card From Supabase =====
 async function loadCardFromSupabase() {
   try {
     const { data, error } = await window.sb
@@ -41,7 +40,6 @@ async function loadCardFromSupabase() {
       .eq("id", id)
       .maybeSingle();
 
-    // PGRST116 = no rows found
     if (error && error.code !== "PGRST116") {
       console.error("Load error:", error);
     }
@@ -62,29 +60,17 @@ async function loadCardFromSupabase() {
       };
     }
   } catch (err) {
-    console.error("Unexpected Supabase load error:", err);
+    console.error("Unexpected load error:", err);
   }
 
   renderEditor();
 }
 
-// ====== Save to Supabase ======
+// ===== Save to Supabase =====
 async function saveFinal() {
-  const cardData = {
-    id,
-    handle: card.handle,
-    title: card.title,
-    subtitle: card.subtitle,
-    photo_url: card.photo_url,
-    links: card.links,
-    country_code: card.country_code,
-    phone: card.phone,
-    email: card.email,
-    org: card.org,
-    role: card.role
-  };
+  const payload = { ...card };
 
-  const { error } = await window.sb.from("cards").upsert(cardData);
+  const { error } = await window.sb.from("cards").upsert(payload);
 
   if (error) {
     alert("Error saving: " + error.message);
@@ -93,12 +79,12 @@ async function saveFinal() {
   }
 }
 
-// ====== Render UI ======
+// ===== Render UI =====
 function renderEditor() {
   const root = document.getElementById("editorCard");
   root.innerHTML = "";
 
-  // ===== Header =====
+  // ===== HEADER =====
   const header = document.createElement("div");
   header.className = "card-header";
 
@@ -108,7 +94,7 @@ function renderEditor() {
   const img = document.createElement("img");
   img.className = "profile-photo";
   img.src = card.photo_url || "";
-  img.alt = "Profile photo";
+  img.alt = "Profile";
 
   img.onclick = () => {
     const picker = document.createElement("input");
@@ -122,22 +108,17 @@ function renderEditor() {
       const fileName = `${id}_photo_${Date.now()}`;
 
       // Upload to Supabase Storage
-      const { error: uploadError } = await window.sb
-        .storage
+      const { error: uploadError } = await window.sb.storage
         .from("profile-photos")
-        .upload(fileName, file, {
-          cacheControl: "3600",
-          upsert: true
-        });
+        .upload(fileName, file, { cacheControl: "3600", upsert: true });
 
       if (uploadError) {
         alert("Upload failed: " + uploadError.message);
         return;
       }
 
-      // Retrieve URL
-      const { data } = window.sb
-        .storage
+      // Get Public URL
+      const { data } = window.sb.storage
         .from("profile-photos")
         .getPublicUrl(fileName);
 
@@ -155,7 +136,6 @@ function renderEditor() {
   photoWrap.appendChild(img);
   photoWrap.appendChild(hint);
 
-  // TEXT FIELDS (handle, title, subtitle)
   const textFields = document.createElement("div");
   textFields.className = "card-text-fields";
 
@@ -182,12 +162,10 @@ function renderEditor() {
   header.appendChild(textFields);
   root.appendChild(header);
 
-  // ===== Divider =====
-  const divider = document.createElement("div");
-  divider.className = "card-divider";
-  root.appendChild(divider);
+  // ===== DIVIDER =====
+  root.appendChild(Object.assign(document.createElement("div"), { className: "card-divider" }));
 
-  // ===== Links =====
+  // ===== LINKS =====
   const linksTitle = document.createElement("div");
   linksTitle.className = "links-area-title";
   linksTitle.textContent = "LINKS";
@@ -202,8 +180,8 @@ function renderEditor() {
 
     const labelInput = document.createElement("input");
     labelInput.className = "link-label-input";
-    labelInput.value = link.label || "";
-    labelInput.placeholder = "Label (Facebook, IG, etc)";
+    labelInput.value = link.label;
+    labelInput.placeholder = "Label";
     labelInput.oninput = () => (card.links[index].label = labelInput.value);
 
     const deleteBtn = document.createElement("button");
@@ -219,7 +197,7 @@ function renderEditor() {
 
     const urlInput = document.createElement("input");
     urlInput.className = "link-url-input";
-    urlInput.value = link.url || "";
+    urlInput.value = link.url;
     urlInput.placeholder = "https://yourlink.com";
     urlInput.oninput = () => (card.links[index].url = urlInput.value);
 
@@ -237,7 +215,7 @@ function renderEditor() {
   };
   root.appendChild(addBtn);
 
-  // ===== CONTACT SECTION (for VCF) =====
+  // ===== CONTACT INFO =====
   const contactTitle = document.createElement("div");
   contactTitle.className = "links-area-title";
   contactTitle.textContent = "CONTACT INFORMATION";
@@ -246,53 +224,48 @@ function renderEditor() {
   const contactContainer = document.createElement("div");
   contactContainer.className = "contact-container";
 
-  // Phone row: small +63 box + main number box
   const phoneRow = document.createElement("div");
   phoneRow.className = "phone-row";
 
   const ccInput = document.createElement("input");
   ccInput.className = "contact-cc";
-  ccInput.placeholder = "+63";
-  ccInput.value = card.country_code || "+63";
+  ccInput.value = card.country_code;
   ccInput.oninput = () => (card.country_code = ccInput.value);
 
   const phoneInput = document.createElement("input");
   phoneInput.className = "contact-phone";
+  phoneInput.value = card.phone;
   phoneInput.placeholder = "Phone number";
-  phoneInput.value = card.phone || "";
   phoneInput.oninput = () => (card.phone = phoneInput.value);
 
   phoneRow.appendChild(ccInput);
   phoneRow.appendChild(phoneInput);
   contactContainer.appendChild(phoneRow);
 
-  // Email
   const emailInput = document.createElement("input");
   emailInput.className = "contact-input";
+  emailInput.value = card.email;
   emailInput.placeholder = "Email (optional)";
-  emailInput.value = card.email || "";
   emailInput.oninput = () => (card.email = emailInput.value);
   contactContainer.appendChild(emailInput);
 
-  // Organization
   const orgInput = document.createElement("input");
   orgInput.className = "contact-input";
-  orgInput.placeholder = "Organization / Company (optional)";
-  orgInput.value = card.org || "";
+  orgInput.value = card.org;
+  orgInput.placeholder = "Organization (optional)";
   orgInput.oninput = () => (card.org = orgInput.value);
   contactContainer.appendChild(orgInput);
 
-  // Role / Position
   const roleInput = document.createElement("input");
   roleInput.className = "contact-input";
+  roleInput.value = card.role;
   roleInput.placeholder = "Role / Position (optional)";
-  roleInput.value = card.role || "";
   roleInput.oninput = () => (card.role = roleInput.value);
   contactContainer.appendChild(roleInput);
 
   root.appendChild(contactContainer);
 
-  // ===== Public URL =====
+  // ===== PUBLIC URL =====
   const urlBox = document.createElement("div");
   urlBox.className = "public-url-box";
 
@@ -302,14 +275,16 @@ function renderEditor() {
 
   const urlInput = document.createElement("input");
   urlInput.className = "public-url-input";
-  urlInput.value = `${window.location.origin}/card.html?id=${id}`;
+
+  const base = window.location.origin + "/tagme";
+  urlInput.value = `${base}/card.html?id=${id}`;
   urlInput.readOnly = true;
 
   urlBox.appendChild(urlLabel);
   urlBox.appendChild(urlInput);
   root.appendChild(urlBox);
 
-  // ===== Save button =====
+  // ===== SAVE BUTTON =====
   const saveBtn = document.createElement("button");
   saveBtn.className = "add-link-btn";
   saveBtn.textContent = "Save Changes";
@@ -320,5 +295,5 @@ function renderEditor() {
   root.appendChild(saveBtn);
 }
 
-// Start Editor
+// ===== Start =====
 loadCardFromSupabase();
