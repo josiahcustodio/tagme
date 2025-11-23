@@ -19,11 +19,11 @@ if (!id) {
 let card = {
   id,
   full_name: "",
-  handle: "@yourhandle",
+  handle: "@yourhandle",   // hidden from UI but kept for login
   title: "Your title here",
   subtitle: "Short description here",
   photo_url: "",
-  photo_b64: "",      // base64 photo for VCF
+  photo_b64: "",
   links: [],
   country_code: "+63",
   phone: "",
@@ -82,11 +82,10 @@ async function saveFinal() {
   }
 }
 
-// ===== Helper: Convert File → Base64 (string only) =====
+// ===== Helper: Convert File → Base64 =====
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    // result is "data:image/jpeg;base64,XXXX", we only keep the XXXX
     reader.onload = () => resolve(reader.result.split(",")[1]);
     reader.onerror = reject;
     reader.readAsDataURL(file);
@@ -122,32 +121,21 @@ function renderEditor() {
 
       const fileName = `${id}_photo_${Date.now()}`;
 
-      // Upload to Supabase Storage
       const { error: uploadError } = await window.sb.storage
         .from("profile-photos")
-        .upload(fileName, file, {
-          cacheControl: "3600",
-          upsert: true
-        });
+        .upload(fileName, file, { cacheControl: "3600", upsert: true });
 
       if (uploadError) {
         alert("Upload failed: " + uploadError.message);
         return;
       }
 
-      // Get public URL
       const { data } = window.sb.storage
         .from("profile-photos")
         .getPublicUrl(fileName);
 
-      card.photo_url = data.publicUrl || card.photo_url;
-
-      // Also store base64 for VCF so phone doesn't need to re-download
-      try {
-        card.photo_b64 = await fileToBase64(file);
-      } catch (e) {
-        console.warn("Base64 conversion failed:", e);
-      }
+      card.photo_url = data.publicUrl;
+      card.photo_b64 = await fileToBase64(file);
 
       renderEditor();
     };
@@ -166,28 +154,26 @@ function renderEditor() {
   const textFields = document.createElement("div");
   textFields.className = "card-text-fields";
 
-  // Full Name
+  // FULL NAME FIELD
   const nameInput = document.createElement("input");
   nameInput.className = "card-input name";
   nameInput.placeholder = "Full Name";
   nameInput.value = card.full_name || "";
   nameInput.oninput = () => (card.full_name = nameInput.value);
 
-  // Handle
+  // HIDDEN HANDLE (NOT SHOWN IN UI)
   const handleInput = document.createElement("input");
-  handleInput.className = "card-input handle";
-  handleInput.placeholder = "@yourhandle";
+  handleInput.type = "hidden";
   handleInput.value = card.handle;
-  handleInput.oninput = () => (card.handle = handleInput.value);
 
-  // Title
+  // TITLE
   const titleInput = document.createElement("input");
   titleInput.className = "card-input title";
   titleInput.placeholder = "Your title";
   titleInput.value = card.title;
   titleInput.oninput = () => (card.title = titleInput.value);
 
-  // Subtitle
+  // SUBTITLE (short description)
   const subtitleInput = document.createElement("input");
   subtitleInput.className = "card-input subtitle";
   subtitleInput.placeholder = "Short description";
@@ -195,7 +181,6 @@ function renderEditor() {
   subtitleInput.oninput = () => (card.subtitle = subtitleInput.value);
 
   textFields.appendChild(nameInput);
-  textFields.appendChild(handleInput);
   textFields.appendChild(titleInput);
   textFields.appendChild(subtitleInput);
 
@@ -204,9 +189,7 @@ function renderEditor() {
   root.appendChild(header);
 
   // ---------- DIVIDER ----------
-  const divider = document.createElement("div");
-  divider.className = "card-divider";
-  root.appendChild(divider);
+  root.appendChild(Object.assign(document.createElement("div"), { className: "card-divider" }));
 
   // ---------- LINKS ----------
   const linksTitle = document.createElement("div");
@@ -267,7 +250,6 @@ function renderEditor() {
   const contactContainer = document.createElement("div");
   contactContainer.className = "contact-container";
 
-  // Phone row
   const phoneRow = document.createElement("div");
   phoneRow.className = "phone-row";
 
@@ -286,7 +268,6 @@ function renderEditor() {
   phoneRow.appendChild(phoneInput);
   contactContainer.appendChild(phoneRow);
 
-  // Email
   const emailInput = document.createElement("input");
   emailInput.className = "contact-input";
   emailInput.placeholder = "Email (optional)";
@@ -294,15 +275,13 @@ function renderEditor() {
   emailInput.oninput = () => (card.email = emailInput.value);
   contactContainer.appendChild(emailInput);
 
-  // Organization
   const orgInput = document.createElement("input");
   orgInput.className = "contact-input";
-  orgInput.placeholder = "Organization / Company (optional)";
+  orgInput.placeholder = "Organization (optional)";
   orgInput.value = card.org || "";
   orgInput.oninput = () => (card.org = orgInput.value);
   contactContainer.appendChild(orgInput);
 
-  // Role / Position
   const roleInput = document.createElement("input");
   roleInput.className = "contact-input";
   roleInput.placeholder = "Role / Position (optional)";
@@ -323,7 +302,6 @@ function renderEditor() {
   const urlInput = document.createElement("input");
   urlInput.className = "public-url-input";
 
-  // For GitHub Pages: /tagme
   const base = window.location.origin + "/tagme";
   urlInput.value = `${base}/card.html?id=${id}`;
   urlInput.readOnly = true;
