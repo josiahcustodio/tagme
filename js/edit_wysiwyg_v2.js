@@ -178,6 +178,7 @@ function renderEditor() {
   subtitleInput.value = card.subtitle;
   subtitleInput.oninput = () => (card.subtitle = subtitleInput.value);
 
+  textFields.appendChild(nameInput);
   textFields.appendChild(handleInput);
   textFields.appendChild(titleInput);
   textFields.appendChild(subtitleInput);
