@@ -187,19 +187,10 @@ async function renderPublicCard() {
 
           ${fullName ? `<div class="public-title">${fullName}</div>` : ""}
 
-          <div class="public-handle">${handle}</div>
+          ${title? `<div class="public-title">${title}</div>` : ""}
+          
+          ${subtitle? `<div class="public-subtitle">${subtitle}</div>` : ""}
 
-          ${
-            title
-              ? `<div class="public-title">${title}</div>`
-              : ""
-          }
-
-          ${
-            subtitle
-              ? `<div class="public-subtitle">${subtitle}</div>`
-              : ""
-          }
 
         </div>
       </div>
