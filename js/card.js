@@ -60,25 +60,29 @@ async function imageUrlToDataURL(url) {
   }
 }
 
-// -------- FIXED VCF BUILDER --------
+// -------- FIXED VCF BUILDER (full_name supported) --------
 function buildVCard(data, photoDataUrl) {
   const lines = [];
   lines.push("BEGIN:VCARD");
   lines.push("VERSION:3.0");
 
-  // Determine full name (use title/name first)
+  // PRIORITY NAME LOGIC:
+  // 1. full_name
+  // 2. title (ex: Founder)
+  // 3. handle (remove @)
   let fullName = sanitize(
+    data.full_name?.trim() ||
     data.title?.trim() ||
     data.handle?.replace("@","").trim() ||
     "Contact"
   );
 
-  // Split for N field
-  let parts = fullName.split(" ");
-  let lastName = parts.length > 1 ? parts.pop() : "";
-  let firstName = parts.join(" ");
+  // Split into N field
+  const parts = fullName.split(" ");
+  const lastName = parts.length > 1 ? parts.pop() : "";
+  const firstName = parts.join(" ");
 
-  // REQUIRED by all phones
+  // Mandatory fields
   lines.push(`FN:${fullName}`);
   lines.push(`N:${lastName};${firstName};;;`);
 
@@ -103,16 +107,16 @@ function buildVCard(data, photoDataUrl) {
     lines.push(`TITLE:${sanitize(data.role)}`);
   }
 
-  // Photo — PRIORITIZE BASE64 IN DATABASE
-  let b64 = data.photo_b64 || null;
+  // Photo (BASE64 FIRST)
+  let base64 = data.photo_b64 || null;
 
-  // If photo_b64 missing, try downloading URL
-  if (!b64 && photoDataUrl) {
-    b64 = photoDataUrl.split(",")[1] || "";
+  // If no stored b64, fallback to downloaded dataURL
+  if (!base64 && photoDataUrl) {
+    base64 = photoDataUrl.split(",")[1] || "";
   }
 
-  if (b64) {
-    lines.push(`PHOTO;ENCODING=b;TYPE=JPEG:${b64}`);
+  if (base64) {
+    lines.push(`PHOTO;ENCODING=b;TYPE=JPEG:${base64}`);
   }
 
   lines.push("END:VCARD");
@@ -121,24 +125,23 @@ function buildVCard(data, photoDataUrl) {
 
 // -------- Save Contact --------
 async function handleSaveContact(data) {
+
   let photoDataUrl = null;
 
-  // Only download if no stored base64
+  // Download only if no stored base64
   if (!data.photo_b64 && data.photo_url) {
     photoDataUrl = await imageUrlToDataURL(data.photo_url);
   }
 
   const vcf = buildVCard(data, photoDataUrl);
-  const blob = new Blob([vcf], {
-    type: "text/vcard;charset=utf-8"
-  });
+  const blob = new Blob([vcf], { type: "text/vcard;charset=utf-8" });
   const url = URL.createObjectURL(blob);
 
   const a = document.createElement("a");
   a.href = url;
 
   const safeName =
-    sanitize(data.title || data.handle || "contact")
+    sanitize(data.full_name || data.title || data.handle || "contact")
       .replace(/[^\w\-]+/g, "_") || "contact";
 
   a.download = `${safeName}.vcf`;
@@ -160,6 +163,7 @@ async function renderPublicCard() {
   const handle = sanitize(data.handle || "@user");
   const title = sanitize(data.title || "");
   const subtitle = sanitize(data.subtitle || "");
+  const fullName = sanitize(data.full_name || "");
 
   let linksHTML = "";
   if (Array.isArray(data.links) && data.links.length > 0) {
@@ -180,22 +184,39 @@ async function renderPublicCard() {
       <div class="public-top">
         ${photoHtml}
         <div class="public-text">
+
+          ${fullName ? `<div class="public-title">${fullName}</div>` : ""}
+
           <div class="public-handle">${handle}</div>
-          ${title? `<div class="public-title">${title}</div>` : ""}
-          ${subtitle? `<div class="public-subtitle">${subtitle}</div>` : ""}
+
+          ${
+            title
+              ? `<div class="public-title">${title}</div>`
+              : ""
+          }
+
+          ${
+            subtitle
+              ? `<div class="public-subtitle">${subtitle}</div>`
+              : ""
+          }
+
         </div>
       </div>
+
       <div class="public-links">
         ${linksHTML}
         <button class="public-link save-contact-btn">
           Save Contact
         </button>
       </div>
+
     </div>
   `;
 
-  const saveBtn = viewRoot.querySelector(".save-contact-btn");
-  saveBtn.addEventListener("click", () => handleSaveContact(data));
+  document
+    .querySelector(".save-contact-btn")
+    .addEventListener("click", () => handleSaveContact(data));
 }
 
 renderPublicCard();
