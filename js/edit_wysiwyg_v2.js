@@ -48,6 +48,7 @@ async function loadCardFromSupabase() {
     if (data) {
       card = {
         id,
+        full_name: data.full_name || "",
         handle: data.handle || "@yourhandle",
         title: data.title || "Your title here",
         subtitle: data.subtitle || "Short description here",
@@ -161,6 +162,12 @@ function renderEditor() {
   const textFields = document.createElement("div");
   textFields.className = "card-text-fields";
 
+  const nameInput = document.createElement("input");
+  nameInput.className = "card-input name";
+  nameInput.placeholder = "Full Name";
+  nameInput.value = card.full_name || "";
+  nameInput.oninput = () => (card.full_name = nameInput.value);
+  
   const handleInput = document.createElement("input");
   handleInput.className = "card-input handle";
   handleInput.placeholder = "@yourhandle";
