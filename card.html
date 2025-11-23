@@ -1,23 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Card</title>
-  <link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8" />
+  <title>TagMe Card</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="css/style.css" />
 </head>
-<body>
+<body class="app-body">
   <div id="cardView" class="public-card"></div>
 
-  <!-- Load ONLY the UMD version of Supabase (same as edit.html) -->
+  <!-- Supabase UMD (for reading card row) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script>
+    const SUPABASE_URL = "https://lwzsrhaxssmmdtbvmwne.supabase.co";
+    const SUPABASE_ANON_KEY =
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3enNyaGF4c3NtbWR0YnZtd25lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NzY0OTEsImV4cCI6MjA3OTM1MjQ5MX0.hi8_62MKDQ2_pJgj4PGb5nXmKpm5mm_PUrGxUAVAaHU";
 
-<script>
-  const SUPABASE_URL = "https://lwzsrhaxssmmdtbvmwne.supabase.co";
-  const SUPABASE_ANON_KEY =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3enNyaGF4c3NtbWR0YnZtd25lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NzY0OTEsImV4cCI6MjA3OTM1MjQ5MX0.hi8_62MKDQ2_pJgj4PGb5nXmKpm5mm_PUrGxUAVAaHU";
-
-  window.sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-</script>
+    window.sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  </script>
 
   <script src="js/card.js"></script>
 </body>
