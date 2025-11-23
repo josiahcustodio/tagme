@@ -440,3 +440,21 @@ body::-webkit-scrollbar-thumb {
   font-size: 14px;
 }
 
+.public-save-contact {
+  width: 100%;
+  background: #3c6aff;
+  border: none;
+  padding: 14px;
+  border-radius: 14px;
+  color: white;
+  font-size: 1rem;
+  margin-top: 16px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.public-save-contact:hover {
+  background: #3354d4;
+}
+
+
