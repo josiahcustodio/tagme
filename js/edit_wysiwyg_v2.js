@@ -18,6 +18,7 @@ if (!id) {
 // ===== Default Card Object =====
 let card = {
   id,
+  full_name: "",
   handle: "@yourhandle",
   title: "Your title here",
   subtitle: "Short description here",
