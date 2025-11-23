@@ -23,7 +23,7 @@ let card = {
   title: "Your title here",
   subtitle: "Short description here",
   photo_url: "",
-  photo_b64: "",   // ← BASE64 added
+  photo_b64: "",      // base64 photo for VCF
   links: [],
   country_code: "+63",
   phone: "",
@@ -53,7 +53,7 @@ async function loadCardFromSupabase() {
         title: data.title || "Your title here",
         subtitle: data.subtitle || "Short description here",
         photo_url: data.photo_url || "",
-        photo_b64: data.photo_b64 || "",  // ← load base64 if exists
+        photo_b64: data.photo_b64 || "",
         links: Array.isArray(data.links) ? data.links : [],
         country_code: data.country_code || "+63",
         phone: data.phone || "",
@@ -82,11 +82,12 @@ async function saveFinal() {
   }
 }
 
-// ===== Helper: Convert File → Base64 =====
+// ===== Helper: Convert File → Base64 (string only) =====
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => resolve(reader.result.split(",")[1]); // remove prefix
+    // result is "data:image/jpeg;base64,XXXX", we only keep the XXXX
+    reader.onload = () => resolve(reader.result.split(",")[1]);
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
@@ -124,7 +125,10 @@ function renderEditor() {
       // Upload to Supabase Storage
       const { error: uploadError } = await window.sb.storage
         .from("profile-photos")
-        .upload(fileName, file, { cacheControl: "3600", upsert: true });
+        .upload(fileName, file, {
+          cacheControl: "3600",
+          upsert: true
+        });
 
       if (uploadError) {
         alert("Upload failed: " + uploadError.message);
@@ -136,9 +140,9 @@ function renderEditor() {
         .from("profile-photos")
         .getPublicUrl(fileName);
 
-      card.photo_url = data.publicUrl;
+      card.photo_url = data.publicUrl || card.photo_url;
 
-      // ---- BASE64 CONVERSION ----
+      // Also store base64 for VCF so phone doesn't need to re-download
       try {
         card.photo_b64 = await fileToBase64(file);
       } catch (e) {
@@ -162,24 +166,28 @@ function renderEditor() {
   const textFields = document.createElement("div");
   textFields.className = "card-text-fields";
 
+  // Full Name
   const nameInput = document.createElement("input");
   nameInput.className = "card-input name";
   nameInput.placeholder = "Full Name";
   nameInput.value = card.full_name || "";
   nameInput.oninput = () => (card.full_name = nameInput.value);
-  
+
+  // Handle
   const handleInput = document.createElement("input");
   handleInput.className = "card-input handle";
   handleInput.placeholder = "@yourhandle";
   handleInput.value = card.handle;
   handleInput.oninput = () => (card.handle = handleInput.value);
 
+  // Title
   const titleInput = document.createElement("input");
   titleInput.className = "card-input title";
   titleInput.placeholder = "Your title";
   titleInput.value = card.title;
   titleInput.oninput = () => (card.title = titleInput.value);
 
+  // Subtitle
   const subtitleInput = document.createElement("input");
   subtitleInput.className = "card-input subtitle";
   subtitleInput.placeholder = "Short description";
@@ -196,9 +204,9 @@ function renderEditor() {
   root.appendChild(header);
 
   // ---------- DIVIDER ----------
-  root.appendChild(
-    Object.assign(document.createElement("div"), { className: "card-divider" })
-  );
+  const divider = document.createElement("div");
+  divider.className = "card-divider";
+  root.appendChild(divider);
 
   // ---------- LINKS ----------
   const linksTitle = document.createElement("div");
@@ -259,6 +267,7 @@ function renderEditor() {
   const contactContainer = document.createElement("div");
   contactContainer.className = "contact-container";
 
+  // Phone row
   const phoneRow = document.createElement("div");
   phoneRow.className = "phone-row";
 
@@ -277,6 +286,7 @@ function renderEditor() {
   phoneRow.appendChild(phoneInput);
   contactContainer.appendChild(phoneRow);
 
+  // Email
   const emailInput = document.createElement("input");
   emailInput.className = "contact-input";
   emailInput.placeholder = "Email (optional)";
@@ -284,6 +294,7 @@ function renderEditor() {
   emailInput.oninput = () => (card.email = emailInput.value);
   contactContainer.appendChild(emailInput);
 
+  // Organization
   const orgInput = document.createElement("input");
   orgInput.className = "contact-input";
   orgInput.placeholder = "Organization / Company (optional)";
@@ -291,6 +302,7 @@ function renderEditor() {
   orgInput.oninput = () => (card.org = orgInput.value);
   contactContainer.appendChild(orgInput);
 
+  // Role / Position
   const roleInput = document.createElement("input");
   roleInput.className = "contact-input";
   roleInput.placeholder = "Role / Position (optional)";
@@ -311,6 +323,7 @@ function renderEditor() {
   const urlInput = document.createElement("input");
   urlInput.className = "public-url-input";
 
+  // For GitHub Pages: /tagme
   const base = window.location.origin + "/tagme";
   urlInput.value = `${base}/card.html?id=${id}`;
   urlInput.readOnly = true;
