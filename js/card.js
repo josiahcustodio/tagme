@@ -1,19 +1,17 @@
 // card.js
-// Public read-only cloud card (Supabase-only, no localStorage)
+// Public read-only cloud card (with VCF Save Contact button)
 
 // ----- Read card ID from URL -----
 const urlPub = new URL(window.location.href);
 const cardId = urlPub.searchParams.get("id");
 const viewRoot = document.getElementById("cardView");
 
-// ----- Load the card from Supabase -----
 async function loadCard() {
   if (!cardId) {
     viewRoot.innerHTML = "<p style='text-align:center;'>No card ID provided.</p>";
     return;
   }
 
-  // Fetch the card from Supabase (use window.sb — NOT supabase)
   const { data, error } = await window.sb
     .from("cards")
     .select("*")
@@ -31,15 +29,35 @@ async function loadCard() {
     return;
   }
 
-  // Photo
+  // ===== VCF GENERATION =====
+  function generateVCF() {
+    let vcf = `BEGIN:VCARD
+VERSION:3.0
+FN:${data.handle || ""}
+TITLE:${data.role || ""}
+ORG:${data.org || ""}
+TEL;TYPE=CELL:${data.country_code || ""}${data.phone || ""}
+EMAIL:${data.email || ""}
+PHOTO;VALUE=URI:${data.photo_url || ""}
+END:VCARD`;
+
+    const blob = new Blob([vcf], { type: "text/vcard" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${data.handle || "contact"}.vcf`;
+    a.click();
+
+    URL.revokeObjectURL(url);
+  }
+
+  // ===== PHOTO =====
   const photo = data.photo_url
-    ? `<img src="${data.photo_url}" class="public-photo" alt="Profile Photo" />`
+    ? `<img src="${data.photo_url}" class="public-photo" />`
     : "";
 
-  const title = data.title ? `<h4>${data.title}</h4>` : "";
-  const subtitle = data.subtitle ? `<p>${data.subtitle}</p>` : "";
-
-  // Build links
+  // ===== LINKS =====
   let linksHTML = "";
 
   if (Array.isArray(data.links) && data.links.length > 0) {
@@ -47,34 +65,41 @@ async function loadCard() {
       .filter(l => l.label && l.url)
       .map(
         l => `
-          <a href="${l.url}" class="public-link" target="_blank">
-            ${l.label}
-          </a>
-        `
+        <a href="${l.url}" class="public-link" target="_blank">
+          ${l.label}
+        </a>
+      `
       )
       .join("");
-  } else {
-    linksHTML = `
-      <p style="text-align:center; color:rgba(255,255,255,0.6); font-size:0.85rem;">
-        No links added.
-      </p>
-    `;
   }
 
-  // Render public view
+  // ===== SAVE CONTACT BUTTON =====
+  const saveContactBtn = `
+    <button class="public-save-contact" id="saveContactBtn">
+      Save Contact
+    </button>
+  `;
+
+  // ===== RENDER CARD =====
   viewRoot.innerHTML = `
-  <div class="card-shell">
     <div class="public-top">
       ${photo}
       <h2>${data.handle || "@user"}</h2>
-      ${title}
-      ${subtitle}
+      <h4>${data.title || ""}</h4>
+      <p>${data.subtitle || ""}</p>
     </div>
 
     <div class="public-links">
       ${linksHTML}
     </div>
+
+    <div class="public-save-section">
+      ${saveContactBtn}
+    </div>
   `;
+
+  // Attach event to Save Contact button
+  document.getElementById("saveContactBtn").onclick = generateVCF;
 }
 
 loadCard();
