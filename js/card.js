@@ -66,11 +66,12 @@ function buildVCard(data, photoDataUrl) {
   lines.push("VERSION:3.0");
 
   const fullName = sanitize(
-    data.title ||
-      data.handle ||
-      ""
-  );
-  lines.push(`FN:${fullName}`);
+  data.title?.trim() ||
+  data.handle?.trim() ||
+  "Contact"
+);
+
+lines.push(`FN:${fullName}`);
 
   const tel = (data.country_code || "") + (data.phone || "");
   if (tel.trim()) {
