@@ -60,6 +60,7 @@ async function imageUrlToDataURL(url) {
   }
 }
 
+// -------- FIXED VCF BUILDER --------
 function buildVCard(data, photoDataUrl) {
   const lines = [];
   lines.push("BEGIN:VCARD");
@@ -72,12 +73,12 @@ function buildVCard(data, photoDataUrl) {
     "Contact"
   );
 
-  // Split into first + last for N:
+  // Split for N field
   let parts = fullName.split(" ");
   let lastName = parts.length > 1 ? parts.pop() : "";
   let firstName = parts.join(" ");
 
-  // Required by many phones
+  // REQUIRED by all phones
   lines.push(`FN:${fullName}`);
   lines.push(`N:${lastName};${firstName};;;`);
 
@@ -102,23 +103,28 @@ function buildVCard(data, photoDataUrl) {
     lines.push(`TITLE:${sanitize(data.role)}`);
   }
 
-  // Photo
-  if (photoDataUrl) {
-    const base64 = photoDataUrl.split(",")[1] || "";
-    if (base64) {
-      lines.push(`PHOTO;ENCODING=b;TYPE=JPEG:${base64}`);
-    }
+  // Photo — PRIORITIZE BASE64 IN DATABASE
+  let b64 = data.photo_b64 || null;
+
+  // If photo_b64 missing, try downloading URL
+  if (!b64 && photoDataUrl) {
+    b64 = photoDataUrl.split(",")[1] || "";
+  }
+
+  if (b64) {
+    lines.push(`PHOTO;ENCODING=b;TYPE=JPEG:${b64}`);
   }
 
   lines.push("END:VCARD");
   return lines.join("\r\n");
 }
 
-
+// -------- Save Contact --------
 async function handleSaveContact(data) {
   let photoDataUrl = null;
 
-  if (data.photo_url) {
+  // Only download if no stored base64
+  if (!data.photo_b64 && data.photo_url) {
     photoDataUrl = await imageUrlToDataURL(data.photo_url);
   }
 
@@ -156,7 +162,6 @@ async function renderPublicCard() {
   const subtitle = sanitize(data.subtitle || "");
 
   let linksHTML = "";
-
   if (Array.isArray(data.links) && data.links.length > 0) {
     linksHTML = data.links
       .filter(l => l && l.label && l.url)
@@ -176,16 +181,8 @@ async function renderPublicCard() {
         ${photoHtml}
         <div class="public-text">
           <div class="public-handle">${handle}</div>
-          ${
-            title
-              ? `<div class="public-title">${title}</div>`
-              : ""
-          }
-          ${
-            subtitle
-              ? `<div class="public-subtitle">${subtitle}</div>`
-              : ""
-          }
+          ${title? `<div class="public-title">${title}</div>` : ""}
+          ${subtitle? `<div class="public-subtitle">${subtitle}</div>` : ""}
         </div>
       </div>
       <div class="public-links">
